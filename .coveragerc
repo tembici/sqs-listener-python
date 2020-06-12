@@ -1,0 +1,10 @@
+[run]
+branch = True
+omit =
+    */__init__.py
+
+source = .
+
+[report]
+fail_under = 100
+show_missing = True
