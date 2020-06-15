@@ -1,5 +1,5 @@
-coverage
-ipdb
 black
-isort
+coverage
 flake8
+ipdb
+isort

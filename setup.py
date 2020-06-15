@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="sqs-listener-python",
+    name="sqslistener",
     version="1.0.0",
     url="https://github.com/tembici/sqs-listener-python",
     description="",

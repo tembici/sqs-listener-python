@@ -23,3 +23,12 @@ jobs:
       - name: Check the tests and coverage
         run: |
           make coverage
+      - name: Check flak8
+        run: |
+          make flake8-check
+      - name: Check black
+        run: |
+          make black-check
+      - name: Check isort
+        run: |
+          make isort-check
