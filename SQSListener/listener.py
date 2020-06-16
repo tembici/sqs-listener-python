@@ -1,15 +1,19 @@
 import json
 from time import sleep
 
+MAX_MESSAGES_PER_REQUEST=10
+MAX_LONG_POLLING_TIME=20
+SLEEP_BETWEEN_REQUESTS=5
+
 
 class SQSListener:
     def __init__(
         self,
         queue_url,
         client,
-        max_messages_per_request=10,
-        max_long_polling_time=20,
-        sleep_between_requests=5,
+        max_messages_per_request=MAX_MESSAGES_PER_REQUEST,
+        max_long_polling_time=MAX_LONG_POLLING_TIME,
+        sleep_between_requests=SLEEP_BETWEEN_REQUESTS,
     ):
         self.queue_url = queue_url
         self.client = client
