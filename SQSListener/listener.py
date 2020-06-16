@@ -1,9 +1,10 @@
 import json
 from time import sleep
 
-MAX_MESSAGES_PER_REQUEST=10
-MAX_LONG_POLLING_TIME=20
-SLEEP_BETWEEN_REQUESTS=5
+MAX_MESSAGES_PER_REQUEST = 10
+MAX_LONG_POLLING_TIME = 20
+MAX_ENQUEUED_DELETE_MESSAGES = 10
+SLEEP_BETWEEN_REQUESTS = 5
 
 
 class SQSListener:
@@ -28,7 +29,6 @@ class SQSListener:
 
     def process_messages(self):
         """Entrypoint for sqs message processing."""
-
         sqs_messages = self.client.receive_message(
             QueueUrl=self.queue_url,
             AttributeNames=["SequenceNumber"],
@@ -57,19 +57,25 @@ class SQSListener:
         return event
 
     def mark_message_to_be_deleted(self, sqs_message):
+        """Marks messages to be deleted. if the deletion
+           queue reaches MAX_ENQUEUED_DELETE_MESSAGES, triggers
+           delete process.
+
+           Args: sqs_message(dict): message to be enqueued/deleted.
+        """
         current_messages_to_delete_queue_length = len(
             self.messages_marked_to_be_deleted
         )
 
-        if current_messages_to_delete_queue_length == 10:
+        if current_messages_to_delete_queue_length == MAX_ENQUEUED_DELETE_MESSAGES:
             self.delete_messages_marked_to_be_deleted()
 
         self.messages_marked_to_be_deleted.append(sqs_message)
 
     def delete_messages_marked_to_be_deleted(self):
+        """Executes deletion of previously marked messages."""
         messages_to_delete_now = []
-
-        for _ in range(10):
+        for _ in range(MAX_ENQUEUED_DELETE_MESSAGES):
             if not self.messages_marked_to_be_deleted:
                 break
 
@@ -82,6 +88,7 @@ class SQSListener:
         )
 
     def listen(self):
+        """Continuosly listens to messages and yelds pbsc-like events."""
         while True:
             events = self.process_messages()
             for event in events:
