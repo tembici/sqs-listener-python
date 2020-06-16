@@ -40,16 +40,18 @@ class SQSListenerTestCase(TestCase):
         actual_response = self.sqs.pbsc_format(sqs_message)
         self.assertEqual(actual_response, expected_response)
 
-    @patch("SQSListener.listener.SQSListener.mark_message_to_be_deleted")
-    def test_process_multiple_messages(self, mocked_mark_message_to_be_deleted):
+    @patch("SQSListener.listener.SQSListener.enqueue_message_to_be_deleted")
+    def test_process_multiple_messages(self, mocked_enqueue_message_to_be_deleted):
         self.mock_client.receive_message.return_value = SQS_RESPONSE_MULTIPLE_MESSAGES
 
         expected_response = [{"id": "001"}, {"id": "002"}]
         actual_response = self.sqs.process_messages()
         self.assertEqual(expected_response, actual_response)
 
-        self.assertEqual(mocked_mark_message_to_be_deleted.call_count, 2)
-        mock_calls = [x[1] for x in mocked_mark_message_to_be_deleted._mock_mock_calls]
+        self.assertEqual(mocked_enqueue_message_to_be_deleted.call_count, 2)
+        mock_calls = [
+            x[1] for x in mocked_enqueue_message_to_be_deleted._mock_mock_calls
+        ]
         self.assertEqual(
             mock_calls[0][0], SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
         )
@@ -66,36 +68,36 @@ class SQSListenerTestCase(TestCase):
         actual_response = self.sqs.process_messages()
         self.assertEqual(expected_response, actual_response)
 
-    @patch("SQSListener.listener.SQSListener.delete_messages_marked_to_be_deleted")
-    def test_mark_message_to_be_deleted_less_than_10(
-        self, mocked_delete_messages_marked_to_be_deleted
+    @patch("SQSListener.listener.SQSListener.delete_enqueued_messages")
+    def test_enqueue_message_to_be_deleted_less_than_10(
+        self, mocked_delete_enqueued_messages
     ):
         sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
 
-        self.sqs.mark_message_to_be_deleted(sqs_message)
+        self.sqs.enqueue_message_to_be_deleted(sqs_message)
 
-        self.assertEqual(self.sqs.messages_marked_to_be_deleted, [sqs_message])
-        mocked_delete_messages_marked_to_be_deleted.assert_not_called()
+        self.assertEqual(self.sqs.messages_to_delete_queue, [sqs_message])
+        mocked_delete_enqueued_messages.assert_not_called()
 
-    @patch("SQSListener.listener.SQSListener.delete_messages_marked_to_be_deleted")
-    def test_mark_message_to_be_deleted_more_than_10(
-        self, mocked_delete_messages_marked_to_be_deleted
+    @patch("SQSListener.listener.SQSListener.delete_enqueued_messages")
+    def test_enqueue_message_to_be_deleted_more_than_10(
+        self, mocked_delete_enqueued_messages
     ):
-        self.sqs.messages_marked_to_be_deleted = [{"Id": x} for x in range(10)]
+        self.sqs.messages_to_delete_queue = [{"Id": x} for x in range(10)]
 
         sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
-        self.sqs.mark_message_to_be_deleted(sqs_message)
+        self.sqs.enqueue_message_to_be_deleted(sqs_message)
 
-        self.assertIn(sqs_message, self.sqs.messages_marked_to_be_deleted)
-        mocked_delete_messages_marked_to_be_deleted.assert_called_once_with()
+        self.assertIn(sqs_message, self.sqs.messages_to_delete_queue)
+        mocked_delete_enqueued_messages.assert_called_once_with()
 
-    def test_delete_messages_marked_to_be_deleted_with_10_items(self):
+    def test_delete_enqueued_messages_with_10_items(self):
         fakes_messages = [
             {"MessageId": x, "ReceiptHandle": f"ReceiptHandle{x}"} for x in range(10)
         ]
-        self.sqs.messages_marked_to_be_deleted = fakes_messages
+        self.sqs.messages_to_delete_queue = fakes_messages
 
-        self.sqs.delete_messages_marked_to_be_deleted()
+        self.sqs.delete_enqueued_messages()
 
         self.mock_client.delete_message_batch.assert_called_once_with(
             Entries=[
@@ -112,15 +114,15 @@ class SQSListenerTestCase(TestCase):
             ],
             QueueUrl="example.com",
         )
-        self.assertEqual(self.sqs.messages_marked_to_be_deleted, [])
+        self.assertEqual(self.sqs.messages_to_delete_queue, [])
 
-    def test_delete_messages_marked_to_be_deleted_less_than_10_items(self):
+    def test_delete_enqueued_messages_less_than_10_items(self):
         fakes_messages = [
             {"MessageId": x, "ReceiptHandle": f"ReceiptHandle{x}"} for x in range(5)
         ]
-        self.sqs.messages_marked_to_be_deleted = fakes_messages
+        self.sqs.messages_to_delete_queue = fakes_messages
 
-        self.sqs.delete_messages_marked_to_be_deleted()
+        self.sqs.delete_enqueued_messages()
 
         self.mock_client.delete_message_batch.assert_called_once_with(
             Entries=[
@@ -132,15 +134,15 @@ class SQSListenerTestCase(TestCase):
             ],
             QueueUrl="example.com",
         )
-        self.assertEqual(self.sqs.messages_marked_to_be_deleted, [])
+        self.assertEqual(self.sqs.messages_to_delete_queue, [])
 
-    def test_delete_messages_marked_to_be_deleted_more_than_10_items(self):
+    def test_delete_enqueued_messages_more_than_10_items(self):
         fakes_messages = [
             {"MessageId": x, "ReceiptHandle": f"ReceiptHandle{x}"} for x in range(20)
         ]
-        self.sqs.messages_marked_to_be_deleted = fakes_messages
+        self.sqs.messages_to_delete_queue = fakes_messages
 
-        self.sqs.delete_messages_marked_to_be_deleted()
+        self.sqs.delete_enqueued_messages()
 
         self.mock_client.delete_message_batch.assert_called_once_with(
             Entries=[
@@ -158,7 +160,7 @@ class SQSListenerTestCase(TestCase):
             QueueUrl="example.com",
         )
         self.assertEqual(
-            self.sqs.messages_marked_to_be_deleted,
+            self.sqs.messages_to_delete_queue,
             [
                 {"MessageId": 10, "ReceiptHandle": "ReceiptHandle10"},
                 {"MessageId": 11, "ReceiptHandle": "ReceiptHandle11"},

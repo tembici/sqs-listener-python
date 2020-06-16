@@ -25,7 +25,7 @@ class SQSListener:
         self.max_long_polling_time = max_long_polling_time
         self.sleep_between_requests = sleep_between_requests
 
-        self.messages_marked_to_be_deleted = []
+        self.messages_to_delete_queue = []
 
     def process_messages(self):
         """Entrypoint for sqs message processing."""
@@ -40,7 +40,7 @@ class SQSListener:
         events = []
         if "Messages" in sqs_messages:
             for sqs_message in sqs_messages["Messages"]:
-                self.mark_message_to_be_deleted(sqs_message)
+                self.enqueue_message_to_be_deleted(sqs_message)
                 event = self.pbsc_format(sqs_message)
                 events.append(event)
 
@@ -56,36 +56,36 @@ class SQSListener:
         event = json.loads(body["Message"])
         return event
 
-    def mark_message_to_be_deleted(self, sqs_message):
+    def enqueue_message_to_be_deleted(self, sqs_message):
         """Marks messages to be deleted. if the deletion
            queue reaches MAX_ENQUEUED_DELETE_MESSAGES, triggers
            delete process.
 
            Args: sqs_message(dict): message to be enqueued/deleted.
         """
-        current_messages_to_delete_queue_length = len(
-            self.messages_marked_to_be_deleted
-        )
+        current_messages_to_delete_queue_length = len(self.messages_to_delete_queue)
 
         if current_messages_to_delete_queue_length == MAX_ENQUEUED_DELETE_MESSAGES:
-            self.delete_messages_marked_to_be_deleted()
+            self.delete_enqueued_messages()
 
-        self.messages_marked_to_be_deleted.append(sqs_message)
+        self.messages_to_delete_queue.append(sqs_message)
 
-    def delete_messages_marked_to_be_deleted(self):
+    def delete_enqueued_messages(self):
         """Executes deletion of previously marked messages."""
         messages_to_delete_now = []
         for _ in range(MAX_ENQUEUED_DELETE_MESSAGES):
-            if not self.messages_marked_to_be_deleted:
+            if not self.messages_to_delete_queue:
                 break
 
-            message = self.messages_marked_to_be_deleted.pop(0)
+            message = self.messages_to_delete_queue.pop(0)
             messages_to_delete_now.append(
                 {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
             )
-        self.client.delete_message_batch(
-            QueueUrl=self.queue_url, Entries=messages_to_delete_now
-        )
+
+        if messages_to_delete_now:
+            self.client.delete_message_batch(
+                QueueUrl=self.queue_url, Entries=messages_to_delete_now
+            )
 
     def listen(self):
         """Continuosly listens to messages and yelds pbsc-like events."""
