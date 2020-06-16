@@ -87,7 +87,7 @@ class SQSListener:
                 QueueUrl=self.queue_url, Entries=messages_to_delete_now
             )
 
-    def listen(self):
+    def listen(self):  # pragma: no cover
         """Continuosly listens to messages and yelds pbsc-like events."""
         while True:
             events = self.process_messages()

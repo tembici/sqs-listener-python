@@ -174,3 +174,10 @@ class SQSListenerTestCase(TestCase):
                 {"MessageId": 19, "ReceiptHandle": "ReceiptHandle19"},
             ],
         )
+
+    def test_delete_enqueued_messages_no_messages_to_delete(self):
+        self.sqs.messages_to_delete_queue = []
+
+        self.sqs.delete_enqueued_messages()
+
+        self.mock_client.delete_message_batch.assert_not_called()
