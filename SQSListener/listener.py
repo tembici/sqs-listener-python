@@ -7,6 +7,8 @@ SLEEP_BETWEEN_REQUESTS=5
 
 
 class SQSListener:
+    """Listener for SQS queues."""
+
     def __init__(
         self,
         queue_url,
@@ -24,12 +26,9 @@ class SQSListener:
 
         self.messages_marked_to_be_deleted = []
 
-    def format_sqs_message_to_pbsc_event(self, sqs_message):
-        body = json.loads(sqs_message["Body"])
-        event = json.loads(body["Message"])
-        return event
-
     def process_messages(self):
+        """Entrypoint for sqs message processing."""
+
         sqs_messages = self.client.receive_message(
             QueueUrl=self.queue_url,
             AttributeNames=["SequenceNumber"],
@@ -42,10 +41,20 @@ class SQSListener:
         if "Messages" in sqs_messages:
             for sqs_message in sqs_messages["Messages"]:
                 self.mark_message_to_be_deleted(sqs_message)
-                event = self.format_sqs_message_to_pbsc_event(sqs_message)
+                event = self.pbsc_format(sqs_message)
                 events.append(event)
 
         return events
+
+    def pbsc_format(self, sqs_message):
+        """Converts payload to pbsc format.
+           Args:
+               sqs_message(dict): message to be converted.
+        """
+
+        body = json.loads(sqs_message["Body"])
+        event = json.loads(body["Message"])
+        return event
 
     def mark_message_to_be_deleted(self, sqs_message):
         current_messages_to_delete_queue_length = len(
