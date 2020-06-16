@@ -9,14 +9,14 @@ class SQSListener:
         client,
         max_messages_per_request=10,
         max_long_polling_time=20,
-        sleep_between_requests_to_sqs=5,
+        sleep_between_requests=5,
     ):
         self.queue_url = queue_url
         self.client = client
 
         self.max_messages_per_request = max_messages_per_request
         self.max_long_polling_time = max_long_polling_time
-        self.sleep_between_requests_to_sqs = sleep_between_requests_to_sqs
+        self.sleep_between_requests = sleep_between_requests
 
         self.messages_marked_to_be_deleted = []
 
@@ -73,4 +73,4 @@ class SQSListener:
             events = self.process_messages()
             for event in events:
                 yield event
-            sleep(self.sleep_between_requests_to_sqs)
+            sleep(self.sleep_between_requests)
