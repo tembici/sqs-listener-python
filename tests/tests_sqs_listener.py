@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from SQSListener import SQSListener
+from sqs_listener import SQSListener
 
 SQS_RESPONSE_MULTIPLE_MESSAGES = {
     "Messages": [
@@ -39,7 +39,7 @@ class SQSListenerTestCase(TestCase):
         actual_response = self.sqs.pbsc_format(sqs_message)
         self.assertEqual(actual_response, expected_response)
 
-    @patch("SQSListener.listener.SQSListener.enqueue_message_to_be_deleted")
+    @patch("sqs_listener.listener.SQSListener.enqueue_message_to_be_deleted")
     def test_process_multiple_messages(self, mocked_enqueue_message_to_be_deleted):
         self.mock_client.receive_message.return_value = SQS_RESPONSE_MULTIPLE_MESSAGES
 
@@ -67,7 +67,7 @@ class SQSListenerTestCase(TestCase):
         actual_response = self.sqs.process_messages()
         self.assertEqual(expected_response, actual_response)
 
-    @patch("SQSListener.listener.SQSListener.delete_enqueued_messages")
+    @patch("sqs_listener.listener.SQSListener.delete_enqueued_messages")
     def test_enqueue_message_to_be_deleted_less_than_10(
         self, mocked_delete_enqueued_messages
     ):
@@ -78,7 +78,7 @@ class SQSListenerTestCase(TestCase):
         self.assertEqual(self.sqs.messages_to_delete_queue, [sqs_message])
         mocked_delete_enqueued_messages.assert_not_called()
 
-    @patch("SQSListener.listener.SQSListener.delete_enqueued_messages")
+    @patch("sqs_listener.listener.SQSListener.delete_enqueued_messages")
     def test_enqueue_message_to_be_deleted_more_than_10(
         self, mocked_delete_enqueued_messages
     ):
