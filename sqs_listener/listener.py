@@ -1,13 +1,18 @@
 import json
+import os
 from time import sleep
 from typing import Dict, List, Optional
 
 import botocore  # type: ignore
 
-MAX_MESSAGES_PER_REQUEST = 10
-MAX_LONG_POLLING_TIME = 20
-MAX_ENQUEUED_DELETE_MESSAGES = 10
-SLEEP_BETWEEN_REQUESTS = 5
+MAX_MESSAGES_PER_REQUEST = int(
+    os.environ.get("SQS_LISTENER_MAX_MESSAGES_PER_REQUEST", 10)
+)
+MAX_LONG_POLLING_TIME = int(os.environ.get("SQS_LISTENER_MAX_LONG_POLLING_TIME", 20))
+MAX_ENQUEUED_DELETE_MESSAGES = int(
+    os.environ.get("SQS_LISTENER_MAX_ENQUEUED_DELETE_MESSAGES", 10)
+)
+SLEEP_BETWEEN_REQUESTS = int(os.environ.get("SQS_LISTENER_SLEEP_BETWEEN_REQUESTS", 5))
 
 OutputMessageFormat = Dict[str, str]
 
