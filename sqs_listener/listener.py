@@ -1,10 +1,15 @@
 import json
 from time import sleep
+from typing import Dict, List, Optional
+
+import botocore  # type: ignore
 
 MAX_MESSAGES_PER_REQUEST = 10
 MAX_LONG_POLLING_TIME = 20
 MAX_ENQUEUED_DELETE_MESSAGES = 10
 SLEEP_BETWEEN_REQUESTS = 5
+
+PBSCMessageFormat = Dict[str, str]
 
 
 class SQSListener:
@@ -12,11 +17,11 @@ class SQSListener:
 
     def __init__(
         self,
-        queue_url,
-        client,
-        max_messages_per_request=MAX_MESSAGES_PER_REQUEST,
-        max_long_polling_time=MAX_LONG_POLLING_TIME,
-        sleep_between_requests=SLEEP_BETWEEN_REQUESTS,
+        queue_url: str,
+        client: "botocore.client.SQS",
+        max_messages_per_request: int = MAX_MESSAGES_PER_REQUEST,
+        max_long_polling_time: int = MAX_LONG_POLLING_TIME,
+        sleep_between_requests: int = SLEEP_BETWEEN_REQUESTS,
     ):
         self.queue_url = queue_url
         self.client = client
@@ -25,9 +30,9 @@ class SQSListener:
         self.max_long_polling_time = max_long_polling_time
         self.sleep_between_requests = sleep_between_requests
 
-        self.messages_to_delete_queue = []
+        self.messages_to_delete_queue: List = []
 
-    def process_messages(self):
+    def process_messages(self) -> List[Optional[PBSCMessageFormat]]:
         """Entrypoint for sqs message processing."""
         sqs_messages = self.client.receive_message(
             QueueUrl=self.queue_url,
@@ -37,7 +42,7 @@ class SQSListener:
             WaitTimeSeconds=self.max_long_polling_time,
         )
 
-        events = []
+        events: List[Optional[PBSCMessageFormat]] = []
         if "Messages" in sqs_messages:
             for sqs_message in sqs_messages["Messages"]:
                 self.enqueue_message_to_be_deleted(sqs_message)
@@ -46,7 +51,7 @@ class SQSListener:
 
         return events
 
-    def pbsc_format(self, sqs_message):
+    def pbsc_format(self, sqs_message) -> PBSCMessageFormat:
         """Converts payload to pbsc format.
            Args:
                sqs_message(dict): message to be converted.
@@ -56,7 +61,7 @@ class SQSListener:
         event = json.loads(body["Message"])
         return event
 
-    def enqueue_message_to_be_deleted(self, sqs_message):
+    def enqueue_message_to_be_deleted(self, sqs_message) -> None:
         """Marks messages to be deleted. if the deletion
            queue reaches MAX_ENQUEUED_DELETE_MESSAGES, triggers
            delete process.
@@ -70,7 +75,7 @@ class SQSListener:
 
         self.messages_to_delete_queue.append(sqs_message)
 
-    def delete_enqueued_messages(self):
+    def delete_enqueued_messages(self) -> None:
         """Executes deletion of previously marked messages."""
         messages_to_delete_now = []
         for _ in range(MAX_ENQUEUED_DELETE_MESSAGES):

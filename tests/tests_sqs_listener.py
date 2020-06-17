@@ -1,9 +1,10 @@
+from typing import Dict, List
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from sqs_listener import SQSListener
 
-SQS_RESPONSE_MULTIPLE_MESSAGES = {
+SQS_RESPONSE_MULTIPLE_MESSAGES: Dict = {
     "Messages": [
         {
             "MessageId": "examplmockesqs_d_boto3_responseeMessageID1",
@@ -18,7 +19,7 @@ SQS_RESPONSE_MULTIPLE_MESSAGES = {
     ],
     "ResponseMetadata": {},
 }
-BOTO3_SQS_EXAMPLE_RESPONSE_NO_MESSAGES = {"ResponseMetadata": {}}
+BOTO3_SQS_EXAMPLE_RESPONSE_NO_MESSAGES: Dict = {"ResponseMetadata": {}}
 
 
 class SQSListenerTestCase(TestCase):
@@ -63,7 +64,7 @@ class SQSListenerTestCase(TestCase):
             BOTO3_SQS_EXAMPLE_RESPONSE_NO_MESSAGES
         )
 
-        expected_response = []
+        expected_response: List[None] = []
         actual_response = self.sqs.process_messages()
         self.assertEqual(expected_response, actual_response)
 

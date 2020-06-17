@@ -1,4 +1,4 @@
-SRC = sqslistener tests setup.py
+SRC = sqs_listener tests setup.py
 
 ## help            -> Show help
 help: Makefile
