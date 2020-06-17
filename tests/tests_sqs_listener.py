@@ -37,7 +37,7 @@ class SQSListenerTestCase(TestCase):
         sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
 
         expected_response = {"id": "001"}
-        actual_response = self.sqs.pbsc_format(sqs_message)
+        actual_response = self.sqs.convert_to_original_message_format(sqs_message)
         self.assertEqual(actual_response, expected_response)
 
     @patch("sqs_listener.listener.SQSListener.enqueue_message_to_be_deleted")

@@ -9,7 +9,7 @@ MAX_LONG_POLLING_TIME = 20
 MAX_ENQUEUED_DELETE_MESSAGES = 10
 SLEEP_BETWEEN_REQUESTS = 5
 
-PBSCMessageFormat = Dict[str, str]
+OutputMessageFormat = Dict[str, str]
 
 
 class SQSListener:
@@ -32,8 +32,9 @@ class SQSListener:
 
         self.messages_to_delete_queue: List = []
 
-    def process_messages(self) -> List[Optional[PBSCMessageFormat]]:
+    def process_messages(self) -> List[Optional[OutputMessageFormat]]:
         """Entrypoint for sqs message processing."""
+
         sqs_messages = self.client.receive_message(
             QueueUrl=self.queue_url,
             AttributeNames=["SequenceNumber"],
@@ -42,17 +43,17 @@ class SQSListener:
             WaitTimeSeconds=self.max_long_polling_time,
         )
 
-        events: List[Optional[PBSCMessageFormat]] = []
+        events: List[Optional[OutputMessageFormat]] = []
         if "Messages" in sqs_messages:
             for sqs_message in sqs_messages["Messages"]:
                 self.enqueue_message_to_be_deleted(sqs_message)
-                event = self.pbsc_format(sqs_message)
+                event = self.convert_to_original_message_format(sqs_message)
                 events.append(event)
 
         return events
 
-    def pbsc_format(self, sqs_message) -> PBSCMessageFormat:
-        """Converts payload to pbsc format.
+    def convert_to_original_message_format(self, sqs_message) -> OutputMessageFormat:
+        """Converts payload to orignal message format.
            Args:
                sqs_message(dict): message to be converted.
         """
@@ -68,6 +69,7 @@ class SQSListener:
 
            Args: sqs_message(dict): message to be enqueued/deleted.
         """
+
         current_messages_to_delete_queue_length = len(self.messages_to_delete_queue)
 
         if current_messages_to_delete_queue_length == MAX_ENQUEUED_DELETE_MESSAGES:
@@ -77,6 +79,7 @@ class SQSListener:
 
     def delete_enqueued_messages(self) -> None:
         """Executes deletion of previously marked messages."""
+
         messages_to_delete_now = []
         for _ in range(MAX_ENQUEUED_DELETE_MESSAGES):
             if not self.messages_to_delete_queue:
@@ -93,7 +96,8 @@ class SQSListener:
             )
 
     def listen(self):  # pragma: no cover
-        """Continuosly listens to messages and yelds pbsc-like events."""
+        """Continuosly listens to messages and yelds messages as it was sent to SQS."""
+
         while True:
             events = self.process_messages()
             for event in events:
