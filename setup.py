@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="sqslistener",
@@ -10,7 +10,7 @@ setup(
     author_email="falecomagente@tembici.com.br",
     packages=find_packages(exclude=[]),
     include_package_data=True,
-    install_requires=[],
+    install_requires=["boto3"],
     python_requires=">=3.6",
     zip_safe=False,
     classifiers=[

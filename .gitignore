@@ -2,6 +2,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,visualstudio,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos,visualstudio,pycharm
 
+### VS Code ###
+.vscode
+
 ### macOS ###
 # General
 .DS_Store

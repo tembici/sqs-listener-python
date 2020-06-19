@@ -1,4 +1,4 @@
-SRC = sqslistener tests setup.py
+SRC = sqs_listener tests setup.py
 
 ## help            -> Show help
 help: Makefile
@@ -8,9 +8,11 @@ help: Makefile
 test:
 	python -m unittest discover tests
 
+check: coverage flake8-check black-check isort-check
+
 ## coverage        -> Run all tests in the project and show coverage. It'll fail if coverage < 100
 coverage:
-	coverage run --source='.' -m unittest discover tests && coverage report --fail-under=100 -m
+	coverage run --source='.' --omit='venv/*' -m unittest discover tests && coverage report --fail-under=95 -m
 
 ## flake8-check    -> Check flake8
 flake8-check:
@@ -33,4 +35,4 @@ isort-check:
             false; \
 	fi
 
-.PHONY: help test coverage
+.PHONY: help test coverage isort-check black-check flake8-check check
