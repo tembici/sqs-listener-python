@@ -8,11 +8,11 @@ help: Makefile
 test:
 	python -m unittest discover tests
 
-check: coverage flake8-check black-check isort-check
+check: coverage flake8-check black-check isort-check mypy-check
 
 ## coverage        -> Run all tests in the project and show coverage. It'll fail if coverage < 100
 coverage:
-	coverage run --source='.' --omit='venv/*' -m unittest discover tests && coverage report --fail-under=95 -m
+	coverage run --source='.' --omit='venv/*' -m unittest discover tests && coverage report
 
 ## flake8-check    -> Check flake8
 flake8-check:
@@ -35,4 +35,8 @@ isort-check:
             false; \
 	fi
 
-.PHONY: help test coverage isort-check black-check flake8-check check
+## mypy-check      -> Check project type hints
+mypy-check:
+	python -m mypy_boto3 && mypy .
+
+.PHONY: help test coverage isort-check black-check flake8-check check mypy-check
