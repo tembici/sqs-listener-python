@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, List
 from unittest import TestCase
 from unittest.mock import Mock, patch
@@ -9,12 +10,12 @@ SQS_RESPONSE_MULTIPLE_MESSAGES: Dict = {
         {
             "MessageId": "examplmockesqs_d_boto3_responseeMessageID1",
             "ReceiptHandle": "ExampleReceiptHandle1",
-            "Body": '{"Message" : "{\\"id\\": \\"001\\"}"}',
+            "Body": '{"id": "001"}',
         },
         {
             "MessageId": "exampleMessageID2",
             "ReceiptHandle": "ExampleReceiptHandle2",
-            "Body": '{"Message" : "{\\"id\\": \\"002\\"}"}',
+            "Body": '{"id": "002"}',
         },
     ],
     "ResponseMetadata": {},
@@ -73,17 +74,30 @@ class SQSListenerTestCase(TestCase):
         self, mocked_delete_enqueued_messages
     ):
         sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
-
         self.sqs._enqueue_message_to_be_deleted(sqs_message)
 
         self.assertEqual(self.sqs.messages_to_delete_queue, [sqs_message])
         mocked_delete_enqueued_messages.assert_not_called()
 
+    def test_enqueue_message_to_be_deleted_duplicated_message_processed(self):
+        sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
+        self.sqs._enqueue_message_to_be_deleted(sqs_message)
+
+        message_processed_second_time = copy(
+            SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
+        )
+        message_processed_second_time["ReceiptHandle"] = "random"
+        self.sqs._enqueue_message_to_be_deleted(message_processed_second_time)
+
+        # If two messages with the same MessageId were added to the
+        # delete queue, we should keep only the first one.
+        self.assertEqual(self.sqs.messages_to_delete_queue, [sqs_message])
+
     @patch("sqs_listener.listener.SQSListener._delete_enqueued_messages")
     def test_enqueue_message_to_be_deleted_more_than_10(
         self, mocked_delete_enqueued_messages
     ):
-        self.sqs.messages_to_delete_queue = [{"Id": x} for x in range(10)]
+        self.sqs.messages_to_delete_queue = [{"MessageId": x} for x in range(10)]
 
         sqs_message = SQS_RESPONSE_MULTIPLE_MESSAGES["Messages"][0]
         self.sqs._enqueue_message_to_be_deleted(sqs_message)
