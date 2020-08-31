@@ -73,7 +73,7 @@ class SQSListener:
         body = json.loads(sqs_message["Body"])
         return body
 
-    def _get_unique_ids_from_messages_to_be_deleted_queue(self):
+    def _ids_from_to_be_deleted_queue(self):
         return (d["MessageId"] for d in self.messages_to_delete_queue)
 
     def _enqueue_message_to_be_deleted(self, sqs_message) -> None:
@@ -89,10 +89,7 @@ class SQSListener:
         if current_messages_to_delete_queue_length == MAX_ENQUEUED_DELETE_MESSAGES:
             self._delete_enqueued_messages()
 
-        if (
-            sqs_message["MessageId"]
-            not in self._get_unique_ids_from_messages_to_be_deleted_queue()
-        ):
+        if sqs_message["MessageId"] not in self._ids_from_to_be_deleted_queue():
             self.messages_to_delete_queue.append(sqs_message)
 
     def _delete_enqueued_messages(self) -> None:
