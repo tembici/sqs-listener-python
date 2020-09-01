@@ -2,7 +2,7 @@ from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="sqslistener",
-    version="1.0.0",
+    version="v0.1.2-beta",
     url="https://github.com/tembici/sqs-listener-python",
     description="",
     long_description="",
